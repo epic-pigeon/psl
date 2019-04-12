@@ -1,12 +1,12 @@
 package ParserPackage;
 
-import java.util.ArrayList;
+
 import java.util.regex.Matcher;
 
 public class Lexer {
-    public static TokenHolder lex(String code, ArrayList<Rule> rules, Rule toSkip) throws LexingException {
+    public static TokenHolder lex(String code, Collection<Rule> rules, Rule toSkip) throws LexingException {
         int position = 0;
-        ArrayList<Token> tokens = new ArrayList<>();
+        Collection<Token> tokens = new Collection<>();
 
         while (position < code.length()) {
             Matcher skipMatcher = toSkip.getPattern().matcher(code.substring(position));

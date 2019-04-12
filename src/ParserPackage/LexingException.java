@@ -1,22 +1,21 @@
 package ParserPackage;
 
-import java.util.ArrayList;
 
 public class LexingException extends Exception {
-    private ArrayList<Token> tokens;
+    private Collection<Token> tokens;
     private int position;
 
-    public LexingException(ArrayList<Token> tokens, int position) {
+    public LexingException(Collection<Token> tokens, int position) {
         super("Lexing exception on position " + position);
         this.tokens = tokens;
         this.position = position;
     }
 
-    public ArrayList<Token> getTokens() {
+    public Collection<Token> getTokens() {
         return tokens;
     }
 
-    public void setTokens(ArrayList<Token> tokens) {
+    public void setTokens(Collection<Token> tokens) {
         this.tokens = tokens;
     }
 

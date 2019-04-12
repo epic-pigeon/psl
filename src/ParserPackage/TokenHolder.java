@@ -1,20 +1,19 @@
 package ParserPackage;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 public class TokenHolder {
-    private ArrayList<Token> tokens;
+    private Collection<Token> tokens;
 
-    public TokenHolder(ArrayList<Token> tokens) {
+    public TokenHolder(Collection<Token> tokens) {
         this.tokens = tokens;
     }
 
-    public ArrayList<Token> getTokens() {
+    public Collection<Token> getTokens() {
         return tokens;
     }
 
-    public void setTokens(ArrayList<Token> tokens) {
+    public void setTokens(Collection<Token> tokens) {
         this.tokens = tokens;
     }
 
