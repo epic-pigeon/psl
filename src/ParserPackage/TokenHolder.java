@@ -1,6 +1,7 @@
 package ParserPackage;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class TokenHolder {
     private ArrayList<Token> tokens;
@@ -25,5 +26,9 @@ public class TokenHolder {
         }
         stringBuilder.append("\n]");
         return stringBuilder.toString();
+    }
+
+    public Iterator<Token> iterator() {
+        return tokens.iterator();
     }
 }

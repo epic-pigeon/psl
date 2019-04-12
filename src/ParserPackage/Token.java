@@ -36,6 +36,6 @@ public class Token {
     }
 
     public String toString() {
-        return "('" + name + "', '" + value.replaceAll("\\n", "<new line>") + "')";
+        return name + " '" + value.replaceAll("\\r?\\n", "<new line>") + "' on " + position;
     }
 }
