@@ -1,5 +1,6 @@
 `
-    function(f) {
-        return f(3) - -1;
+    function(f, x) {
+        console.log(Math.random());
+        return f(x);
     }
-`(`function(x) {return x + 1;}`)
+`(`function(x) {return x+1;}`, 4)

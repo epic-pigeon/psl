@@ -129,13 +129,21 @@ class JSFunction implements Function<Object, Value> {
         ScriptEngine engine = manager.getEngineByName("js");
         ScriptObjectMirror result = null;
         try {
-            result = (ScriptObjectMirror) engine.eval(s.substring(1, s.length() - 1));
+            result = (ScriptObjectMirror) engine.eval(
+                    "(function() {\n" +
+                                "console = {\n" +
+                                    "log: print,\n" +
+                                    "error: print,\n" +
+                                    "warn: print\n" +
+                                "};\n" +
+                                "return (" + s.substring(1, s.length() - 1) + ");\n" +
+                            "})()");
         } catch (ScriptException e) {
             e.printStackTrace();
         }
         Object[] args = new Object[]{values};
         try {
-            args = ((Collection<Value>) values).map(value -> value.getType().cast(value.getValue())).toArray();
+            args = ((Collection<Value>) values).map(value -> value.getType().cast(value.getValue())).reverse().toArray();
         } catch (ClassCastException ignored){}
         return new Value(
                 result.call(null, args)
