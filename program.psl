@@ -1,6 +1,1 @@
-/
-    define KAR
-    add KAR `\\&kar`
-    print KAR
-/
-&kar &kar &kar
+print(1)

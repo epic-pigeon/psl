@@ -19,7 +19,8 @@ public class Parser {
             new Collection<>(
                     new Variable("print",
                             new Value(
-                                    new PSLFunction(args -> {
+                                    new PSLFunction(arguments -> {
+                                        Collection<Value> args = arguments.getArgs();
                                         System.out.println("printed: " + args);
                                         return null;
                                     })
@@ -27,7 +28,8 @@ public class Parser {
                     ),
                     new Variable("random",
                             new Value(
-                                    new PSLFunction(args -> {
+                                    new PSLFunction(arguments -> {
+                                        Collection<Value> args = arguments.getArgs();
                                         switch (args.size()) {
                                             case 0:
                                                 return new Value(Math.random());
@@ -62,7 +64,7 @@ public class Parser {
             add(new Rule("VALUE_STRING",
                     new Collection<>(
                             "'([^'\\\\\\n]|(\\\\.))*'",
-                            "\"([^\"\\\\\\n]|(\\\\.))*\")"
+                            "\"([^\"\\\\\\n]|(\\\\.))*\""
                     )
             ));
             add(new Rule("\\`([^\\`]|(\\\\.))*\\`", "VALUE_JS"));
@@ -150,7 +152,7 @@ public class Parser {
                     args.add(val);
                 }
                 if (val.getType() == ApproveCall.class)
-                    stack.add(((Function<Collection<Value>, Value>) value.getValue()).apply(args));
+                    stack.add(((Function<PSLFunctionArguments, Value>) value.getValue()).apply(new PSLFunctionArguments(environment, args)));
                 else stack.add(value);
             } else stack.add(value);
         }
@@ -213,7 +215,7 @@ class JSFunction implements Function<Object, Value> {
         }
         Object[] args = new Object[]{values};
         try {
-            args = ((Collection<Value>) values).map(value -> value.getType().cast(value.getValue())).reverse().toArray();
+            args = ((PSLFunctionArguments) values).getArgs().map(value -> value.getType().cast(value.getValue())).reverse().toArray();
         } catch (ClassCastException ignored){}
         return new Value(
                 result.call(null, args)
@@ -222,17 +224,19 @@ class JSFunction implements Function<Object, Value> {
 }
 
 class PSLFunction implements Function<Object, Value> {
-    private Function<Collection<Value>, Value> action;
+    private Function<PSLFunctionArguments, Value> action;
 
-    public PSLFunction(Function<Collection<Value>, Value> action) {
+    public PSLFunction(Function<PSLFunctionArguments, Value> action) {
         this.action = action;
     }
 
     @Override
     public Value apply(Object o) {
-        if (o instanceof Collection) {
-            return action.apply(((Collection<Value>) o).reverse());
-        } else return action.apply(new Collection<>(new Value(o)));
+        if (o instanceof PSLFunctionArguments) {
+            PSLFunctionArguments arguments = (PSLFunctionArguments) o;
+            arguments.setArgs(arguments.getArgs().reverse());
+            return action.apply(arguments);
+        } else return action.apply(new PSLFunctionArguments(null, new Collection<>(new Value(o))));
     }
 }
 
@@ -273,6 +277,32 @@ class Identifier {
     @Override
     public String toString() {
         return name;
+    }
+}
+
+class PSLFunctionArguments {
+    private Environment environment;
+    private Collection<Value> args;
+
+    public PSLFunctionArguments(Environment environment, Collection<Value> args) {
+        this.environment = environment;
+        this.args = args;
+    }
+
+    public Environment getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(Environment environment) {
+        this.environment = environment;
+    }
+
+    public Collection<Value> getArgs() {
+        return args;
+    }
+
+    public void setArgs(Collection<Value> args) {
+        this.args = args;
     }
 }
 
