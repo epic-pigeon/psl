@@ -1,9 +1,6 @@
 package ParserPackage;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -13,6 +10,9 @@ public class Collection<T> extends ArrayList<T> {
     }
     public Collection(int k) {
         super(k);
+    }
+    public Collection(T... args) {
+        super(Arrays.asList(args));
     }
     public<E> Collection<E> map(Function<T, E> fn) {
         Collection<E> collection = new Collection<>();
@@ -27,5 +27,16 @@ public class Collection<T> extends ArrayList<T> {
                 .forEachRemaining(reverse::add);
 
         return reverse;
+    }
+    public String join(String glue) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < this.size(); i++) {
+            if (i != 0) result.append(glue);
+            result.append(this.get(i).toString());
+        }
+        return result.toString();
+    }
+    public String join() {
+        return join(" ");
     }
 }

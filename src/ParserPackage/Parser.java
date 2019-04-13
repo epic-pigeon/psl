@@ -129,15 +129,7 @@ class JSFunction implements Function<Object, Value> {
         ScriptEngine engine = manager.getEngineByName("js");
         ScriptObjectMirror result = null;
         try {
-            result = (ScriptObjectMirror) engine.eval(
-                    "(function() {\n" +
-                                "console = {\n" +
-                                    "log: print,\n" +
-                                    "error: print,\n" +
-                                    "warn: print\n" +
-                                "};\n" +
-                                "return (" + s.substring(1, s.length() - 1) + ");\n" +
-                            "})()");
+            result = (ScriptObjectMirror) engine.eval(s.substring(1, s.length() - 1));
         } catch (ScriptException e) {
             e.printStackTrace();
         }
