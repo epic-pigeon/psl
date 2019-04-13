@@ -39,4 +39,8 @@ public class Collection<T> extends ArrayList<T> {
     public String join() {
         return join(" ");
     }
+    public T findFirst(Function<T, Boolean> fn) {
+        for (T element: this) if (fn.apply(element)) return element;
+        return null;
+    }
 }

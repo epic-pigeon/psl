@@ -3,33 +3,44 @@ package ParserPackage;
 import java.util.regex.Pattern;
 
 public class Rule {
-    private Pattern pattern;
+    private Collection<Pattern> patterns = new Collection<>();
     private String name;
 
     public Rule(Pattern pattern, String name) {
-        this.pattern = pattern;
+        this.patterns.add(pattern);
+        this.name = name;
+    }
+
+    public Rule(Collection<Pattern> pattern, String name) {
+        this.patterns = pattern;
+        this.name = name;
+    }
+
+    public Rule(String name, Collection<String> patterns) {
+        this.patterns = new Collection<>();
+        for (String pattern: patterns) this.patterns.add(Pattern.compile(pattern));
         this.name = name;
     }
 
     public Rule(String regex, String name) {
-        pattern = Pattern.compile(regex);
+        patterns.add(Pattern.compile(regex));
         this.name = name;
     }
 
     public Rule(Pattern pattern) {
-        this.pattern = pattern;
+        this.patterns.add(pattern);
     }
 
     public Rule(String pattern) {
-        this.pattern = Pattern.compile(pattern);
+        this.patterns.add(Pattern.compile(pattern));
     }
 
-    public Pattern getPattern() {
-        return pattern;
+    public Collection<Pattern> getPatterns() {
+        return patterns;
     }
 
-    public void setPattern(Pattern pattern) {
-        this.pattern = pattern;
+    public void addPattern(Pattern pattern) {
+        this.patterns.add(pattern);
     }
 
     public String getName() {
@@ -38,5 +49,14 @@ public class Rule {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setPatterns(Collection<Pattern> patterns) {
+        this.patterns = patterns;
+    }
+
+    @Override
+    public String toString() {
+        return name + ", " + patterns;
     }
 }

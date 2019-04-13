@@ -15,6 +15,7 @@ public class Value {
     }
 
     public void setValue(Object value) {
+        if (value == null) value = NULL;
         this.value = value;
         this.type = value.getClass();
     }
@@ -27,4 +28,13 @@ public class Value {
     public String toString() {
         return value.toString();
     }
+
+    private static class Null {
+        @Override
+        public String toString() {
+            return "null";
+        }
+    }
+
+    private static Null NULL = new Null();
 }

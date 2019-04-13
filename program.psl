@@ -1,8 +1,6 @@
-`
-    function(x) {
-        return x;
-    }
-`
-(
-    `Math.random()`
-)
+/
+    define KAR
+    add KAR `\\&kar`
+    print KAR
+/
+&kar &kar &kar
