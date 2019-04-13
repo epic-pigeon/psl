@@ -1,6 +1,8 @@
 `
     function(x) {
-        print(x);
-        return x * Math.random();
+        return x;
     }
-`(4)
+`
+(
+    `Math.random()`
+)

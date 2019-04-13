@@ -8,6 +8,8 @@ public class Value {
         setValue(value);
     }
 
+    public Value() {}
+
     public Object getValue() {
         return value;
     }

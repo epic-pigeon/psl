@@ -50,7 +50,11 @@ public class Parser {
             } else {
                 relativePosition = e.getPosition() - lastNewLine.getPosition() - 1;
             }
-            throw new Exception("Unexpected token in " + file.getAbsolutePath() + ":" + (k + 1) + ":" + relativePosition + " (absolute position: " + e.getPosition() + ")");
+            StringBuilder spaces = new StringBuilder();
+            for (int i = 0; i < relativePosition; i++) spaces.append(" ");
+            throw new Exception("Unexpected token in " + file.getAbsolutePath() + ":" + (k + 1) + ":" + relativePosition + " (absolute position: " + e.getPosition() + "):\n" +
+                                code.split("\\r?\\n")[k] + "\n" +
+                                spaces.toString() + "^");
         }
 
         Collection<Value> output = new Collection<>();
@@ -63,8 +67,9 @@ public class Parser {
                 } else if (token.getName().equals("VALUE_NUMBER")) {
                     output.add(parseNumber(token.getValue()));
                 } else if (token.getName().equals("VALUE_FUNCTION")) {
-                    output.add(new Value(new DenyCall()));
-                    output.add(parseFunction(token.getValue()));
+                    Value value = parseJSValue(token.getValue());
+                    if (!(value instanceof JSValue)) output.add(new Value(new DenyCall()));
+                    output.add(value);
                 } else {
                     /* wtf */
                 }
@@ -74,8 +79,8 @@ public class Parser {
                     output.remove(output.size() - 1);
                     operator.add(f);
                     output.add(new Value(new ApproveCall()));
-                    operator.add(new Value(new ApproveCall()));
-                } else throw new Exception("Unexpected left parenthesis");
+                }
+                operator.add(new Value(new ApproveCall()));
             } else if (token.getName().equals("RIGHT_PAREN")) {
                 while (operator.get(operator.size() - 1).getType() != ApproveCall.class) {
                     output.add(operator.remove(operator.size() - 1));
@@ -114,6 +119,23 @@ public class Parser {
     private static Value parseFunction(String s) {
         return new Value(new JSFunction(s));
     }
+    private static Value parseJSValue(String s) {
+        ScriptEngineManager manager = new ScriptEngineManager();
+        ScriptEngine engine = manager.getEngineByName("js");
+        Object result = null;
+        try {
+            result = engine.eval(s.substring(1, s.length() - 1));
+        } catch (ScriptException e) {
+            e.printStackTrace();
+        }
+        try {
+            if (((ScriptObjectMirror) result).isFunction()) {
+                return parseFunction(s);
+            } else return new JSValue(s);
+        } catch (ClassCastException ignored) {
+            return new JSValue(s);
+        }
+    }
 }
 
 class JSFunction implements Function<Object, Value> {
@@ -140,6 +162,25 @@ class JSFunction implements Function<Object, Value> {
         return new Value(
                 result.call(null, args)
         );
+    }
+}
+
+class JSValue extends Value {
+    public JSValue(Object object) {
+        if (object.getClass() == String.class) {
+            ScriptEngineManager manager = new ScriptEngineManager();
+            ScriptEngine engine = manager.getEngineByName("js");
+            Object result = null;
+            String s = object.toString();
+            try {
+                result = engine.eval(s.substring(1, s.length() - 1));
+            } catch (ScriptException e) {
+                e.printStackTrace();
+            }
+            setValue(result);
+        } else {
+            setValue(object);
+        }
     }
 }
 
