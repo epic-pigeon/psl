@@ -9,7 +9,8 @@ public class Lexer {
     public static TokenHolder lex(String code, Collection<Rule> rules, Rule toSkip) throws LexingException {
         int position = 0;
         Collection<Token> tokens = new Collection<>();
-        rules.add(new Rule("\\/([^/]|(\\\\.))*\\/", "__LEXER_SETTINGS"));
+        rules.add(new Rule("\\/\\<([^\\/\\<\\>]|(\\\\.))*\\>\\/", "__LEXER_SETTINGS"));
+
 
         while (position < code.length()) {
             for (Pattern pattern: toSkip.getPatterns()) {
@@ -27,10 +28,11 @@ public class Lexer {
                         Matcher matcher = pattern.matcher(code.substring(position));
                         if (matcher.find() && matcher.start() == 0) {
                             if (rule.getName().equals("__LEXER_SETTINGS")) {
+                                tokens.add(new Token(rule.getName(), matcher.group(), position, matcher.group().split("\\r?\\r").length - 1));
                                 rules = parseLexerSettings(matcher.group(), rules);
                                 position += matcher.group().length();
                             } else {
-                                tokens.add(new Token(rule.getName(), matcher.group(), position));
+                                tokens.add(new Token(rule.getName(), matcher.group(), position, matcher.group().split("\\r?\\r").length - 1));
                                 position += matcher.group().length();
                             }
                             throw new ContinueException();
@@ -56,9 +58,9 @@ public class Lexer {
                 new Rule("delete", "COMMAND_DELETE"),
                 new Rule("print", "COMMAND_PRINT"),
                 new Rule("[A-Z0-9_]+", "VALUE_IDENTIFIER"),
-                new Rule("\\`[^\\`]*\\`", "VALUE_REGEX")
+                new Rule("\\`[^`]*\\`", "VALUE_REGEX")
         );
-        TokenHolder tokens = lex(s.substring(1, s.length() - 1), rules, toSkip);
+        TokenHolder tokens = lex(s.substring(2, s.length() - 2).replaceAll("(\\\\)(.)", "$2"), rules, toSkip);
         Iterator<Token> iterator = tokens.iterator();
         while (iterator.hasNext()) {
             Token token = iterator.next();
@@ -96,7 +98,7 @@ public class Lexer {
     }
 
     private static Pattern parseRegex(String s) {
-        s = s.replaceAll("(\\\\)(.)", "$2");
+        //s = s.replaceAll("(\\\\)(.)", "$2");
         return Pattern.compile(s.substring(1, s.length() - 1));
     }
 }

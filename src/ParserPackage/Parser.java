@@ -57,7 +57,7 @@ public class Parser {
         Collection<Rule> rules = new Collection<Rule>(){{
             add(new Rule(";", "SEMICOLON"));
             add(new Rule(",", "COMMA"));
-            add(new Rule("//", "LINE_COMMENT"));
+            add(new Rule("//.*", "LINE_COMMENT"));
             add(new Rule("\\(", "LEFT_PAREN"));
             add(new Rule("\\)", "RIGHT_PAREN"));
             add(new Rule("(\\d*(\\.\\d+)(e-?\\d+)?)|(\\d+(\\.\\d+)?(e-?\\d+)?)", "VALUE_NUMBER"));
@@ -77,19 +77,9 @@ public class Parser {
             tokenHolder = Lexer.lex(code, rules, toSkip);
             System.out.println(tokenHolder);
         } catch (LexingException e) {
-            Collection<Token> tokens = e.getTokens();
-            Token lastNewLine = null;
-            int k = 0;
-            for (Token token: tokens) if ("NEWLINE".equals(token.getName())) {
-                k++;
-                lastNewLine = token;
-            }
-            int relativePosition;
-            if (k == 0) {
-                relativePosition = e.getPosition();
-            } else {
-                relativePosition = e.getPosition() - lastNewLine.getPosition() - 1;
-            }
+            String[] chunks = code.substring(0, e.getPosition() + 1).split("\\r?\\n");
+            int relativePosition = chunks[chunks.length - 1].length() - 1;
+            int k = chunks.length - 1;
             StringBuilder spaces = new StringBuilder();
             for (int i = 0; i < relativePosition; i++) spaces.append(" ");
             throw new Exception("Unexpected token in " + file.getAbsolutePath() + ":" + (k + 1) + ":" + relativePosition + " (absolute position: " + e.getPosition() + "):\n" +
@@ -165,14 +155,14 @@ public class Parser {
     private static Value parseString(String s) {
         return new Value(s.substring(1, s.length() - 1).replaceAll("(\\\\)(.)", "$2"));
     }
-    private static Value parseNumber(String s) throws ParseException {
+    private static Value parseNumber(String s) {
         String[] parts = s.split("e");
-        Double number = Double.parseDouble(parts[0]);
+        double number = Double.parseDouble(parts[0]);
         try {
             long exponent = Long.parseLong(parts[1]);
             number *= Math.pow(10, exponent);
         } catch (IndexOutOfBoundsException ignored){}
-        return new Value((Number) number);
+        return new Value(number);
     }
     private static Value parseFunction(String s) {
         return new Value(new JSFunction(s));
