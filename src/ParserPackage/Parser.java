@@ -130,8 +130,6 @@ public class Parser {
                             new BinaryOperator(
                                 "=",
                                 (a, b) -> {
-                                    System.out.println(a.getType());
-                                    System.out.println(b.getType());
                                     if (a.getType() == Identifier.class) {
                                         String name = ((Identifier) a.getValue()).getName();
                                         Variable variable = environment[0].getVariables().findFirst(variable1 -> variable1.getName().equals(name));
@@ -260,7 +258,8 @@ public class Parser {
             } else if (value.getType() == Identifier.class) {
                 Variable variable = environment[0].getVariables().findFirst(var -> var.getName().equals(((Identifier)value.getValue()).getName()));
                 if (variable == null) {
-                    stack.add(new Value(((Identifier) value.getValue()).getName()));
+                    stack.pop();
+                    stack.add(new Value((Identifier) value.getValue()));
                     continue;
                 }
                 if (Function.class.isAssignableFrom(variable.getValue().getType())) {
@@ -287,7 +286,6 @@ public class Parser {
                 Value operand1 = stack.pop();
                 stack.add(((BinaryOperator) value.getValue()).eval(operand1, operand2));
             } else stack.add(value);
-            System.out.println(stack);
         }
 
         return exports;
