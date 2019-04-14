@@ -1,12 +1,16 @@
 package ParserPackage;
 
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Lexer {
-    public static TokenHolder lex(String code, Collection<Rule> rules, Rule toSkip) throws LexingException {
+    public static TokenHolder lex(String code, Collection<Rule> rules, Rule toSkip) throws Exception {
         int position = 0;
         Collection<Token> tokens = new Collection<>();
         rules.add(new Rule("\\/\\<([^\\/\\<\\>]|(\\\\.))*\\>\\/", "__LEXER_SETTINGS"));
@@ -29,7 +33,7 @@ public class Lexer {
                         if (matcher.find() && matcher.start() == 0) {
                             if (rule.getName().equals("__LEXER_SETTINGS")) {
                                 tokens.add(new Token(rule.getName(), matcher.group(), position, matcher.group().split("\\r?\\r").length - 1));
-                                rules = parseLexerSettings(matcher.group(), rules);
+                                rules = parseLexerSettings(matcher.group().substring(2, matcher.group().length() - 2), rules);
                                 position += matcher.group().length();
                             } else {
                                 tokens.add(new Token(rule.getName(), matcher.group(), position, matcher.group().split("\\r?\\r").length - 1));
@@ -47,7 +51,7 @@ public class Lexer {
 
         return new TokenHolder(tokens);
     }
-    private static Collection<Rule> parseLexerSettings(String s, Collection<Rule> oldRules) throws LexingException {
+    private static Collection<Rule> parseLexerSettings(String s, Collection<Rule> oldRules) throws Exception {
         Collection<Rule> newRules = new Collection<>();
         for (Rule rule: oldRules) newRules.add(new Rule(rule.getPatterns(), rule.getName()));
         Rule toSkip = new Rule("\\s+");
@@ -57,10 +61,12 @@ public class Lexer {
                 new Rule("add", "COMMAND_ADD"),
                 new Rule("delete", "COMMAND_DELETE"),
                 new Rule("print", "COMMAND_PRINT"),
+                new Rule("load", "COMMAND_LOAD"),
                 new Rule("[A-Z0-9_]+", "VALUE_IDENTIFIER"),
-                new Rule("\\`[^`]*\\`", "VALUE_REGEX")
+                new Rule("\\`[^`]*\\`", "VALUE_REGEX"),
+                new Rule("\\'[^']*\\'", "VALUE_STRING")
         );
-        TokenHolder tokens = lex(s.substring(2, s.length() - 2).replaceAll("(\\\\)(.)", "$2"), rules, toSkip);
+        TokenHolder tokens = lex(s.replaceAll("(\\\\)(.)", "$2"), rules, toSkip);
         Iterator<Token> iterator = tokens.iterator();
         while (iterator.hasNext()) {
             Token token = iterator.next();
@@ -91,6 +97,25 @@ public class Lexer {
                     assert ruleToken.getName().equals("VALUE_IDENTIFIER");
                     Rule rule = newRules.findFirst(rule1 -> ruleToken.getValue().equals(rule1.getName()));
                     System.out.println(rule);
+                } else if (token.getName().equals("COMMAND_LOAD")) {
+                    Token fileToken = iterator.next();
+                    assert fileToken.getName().equals("VALUE_STRING");
+                    String filename = parseString(fileToken.getValue());
+                    File file = new File(filename);
+                    if (!Parser.getFileExtension(file).equalsIgnoreCase("pslcfg")) {
+                        if (Parser.getFileExtension(file).equals("")) {
+                            file = new File(filename + ".pslcfg");
+                            if (Parser.getFileExtension(file).equals("")) throw new Exception("Wrong file: '" + filename + "'");
+                        } else throw new Exception("Wrong file extension: " + file.getAbsolutePath());
+                    }
+                    byte[] data = new byte[(int) file.length()];
+                    try {
+                        FileInputStream fis = new FileInputStream(file);
+                        fis.read(data);
+                        fis.close();
+                    } catch (IOException ignored) {}
+                    String code = new String(data, StandardCharsets.UTF_8);
+                    newRules = Lexer.parseLexerSettings(code, newRules);
                 }
             }
         }
@@ -100,6 +125,9 @@ public class Lexer {
     private static Pattern parseRegex(String s) {
         //s = s.replaceAll("(\\\\)(.)", "$2");
         return Pattern.compile(s.substring(1, s.length() - 1));
+    }
+    private static String parseString(String s) {
+        return s.substring(1, s.length() - 1);
     }
 }
 

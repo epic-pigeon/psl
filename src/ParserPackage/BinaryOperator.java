@@ -11,9 +11,10 @@ public class BinaryOperator {
         this.name = name;
     }
 
-    public BinaryOperator(String name, BiFunction<Value, Value, Value> action) {
+    public BinaryOperator(String name, BiFunction<Value, Value, Value> action, int precedence) {
         this.name = name;
         this.action = action;
+        this.precedence = precedence;
     }
 
     private String name;
@@ -30,5 +31,19 @@ public class BinaryOperator {
 
     public Value eval(Value a, Value b) {
         return action.apply(a, b);
-    };
+    }
+
+    public String getRegex() {
+        return "\\" + getName();
+    }
+
+    public int getPrecedence() {
+        return precedence;
+    }
+
+    public void setPrecedence(int precedence) {
+        this.precedence = precedence;
+    }
+
+    private int precedence;
 }

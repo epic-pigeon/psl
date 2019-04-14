@@ -1,0 +1,2 @@
+redefine LINE_COMMENT
+add LINE_COMMENT `\<\<.*`

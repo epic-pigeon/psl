@@ -2,7 +2,6 @@ package ParserPackage;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class Collection<T> extends ArrayList<T> {
     public Collection() {
@@ -42,5 +41,11 @@ public class Collection<T> extends ArrayList<T> {
     public T findFirst(Function<T, Boolean> fn) {
         for (T element: this) if (fn.apply(element)) return element;
         return null;
+    }
+    public T last() {
+        return (size() > 0 ? get(size() - 1) : null);
+    }
+    public T pop() {
+        return remove(size() - 1);
     }
 }

@@ -15,7 +15,7 @@ public class Value {
     }
 
     public void setValue(Object value) {
-        if (value == null) value = NULL;
+        if (value == null) value = NULL_VALUE;
         this.value = value;
         this.type = value.getClass();
     }
@@ -36,5 +36,7 @@ public class Value {
         }
     }
 
-    private static Null NULL = new Null();
+    private static Null NULL_VALUE = new Null();
+
+    public static Value NULL = new Value(NULL_VALUE);
 }

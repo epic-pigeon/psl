@@ -1,0 +1,6 @@
+set("eval", `evalPSL`)
+set("println", `function(arg) {
+    print(arg);
+    return null;
+}`)
+export("kar")

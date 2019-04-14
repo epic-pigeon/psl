@@ -1,15 +1,2 @@
-// дефолтный комментарий
-
-/<
-    redefine LINE_COMMENT
-    add LINE_COMMENT `\<\<.*`
->/
-
-<< измененный комментарий
-
-/<
-    add LINE_COMMENT `\>\>.*`
->/
-
-<< теперь два варианта
->> тоже работает
+kar = "ne kar";
+print(kar)
