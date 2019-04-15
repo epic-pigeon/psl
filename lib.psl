@@ -1,6 +1,10 @@
-set("eval", `evalPSL`)
-set("println", `function(arg) {
-    print(arg);
-    return null;
-}`)
-export("kar")
+eval = require('eval');
+print(eval);
+println = require('println');
+print(println);
+export(`(function() {
+    var obj = new Object();
+    obj.println = get("println");
+    obj.eval = get("eval");
+    return obj;
+})()`)

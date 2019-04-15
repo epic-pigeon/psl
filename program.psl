@@ -1,2 +1,5 @@
-kar = "ne kar";
-print(kar)
+/<
+    load 'default_lexer_config'
+>/
+
+print(require('lib'));

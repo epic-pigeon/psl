@@ -1,0 +1,4 @@
+eval = `evalPSL`;
+`evalPSL`('print("kar")');
+eval('print("kar")');
+export(eval);

@@ -33,7 +33,9 @@ public class Lexer {
                         if (matcher.find() && matcher.start() == 0) {
                             if (rule.getName().equals("__LEXER_SETTINGS")) {
                                 tokens.add(new Token(rule.getName(), matcher.group(), position, matcher.group().split("\\r?\\r").length - 1));
-                                rules = parseLexerSettings(matcher.group().substring(2, matcher.group().length() - 2), rules);
+                                    rules = parseLexerSettings(
+                                            matcher.group().substring(2, matcher.group().length() - 2).replaceAll("(\\\\)([/<>])", "$2"), rules
+                                    );
                                 position += matcher.group().length();
                             } else {
                                 tokens.add(new Token(rule.getName(), matcher.group(), position, matcher.group().split("\\r?\\r").length - 1));
@@ -63,10 +65,10 @@ public class Lexer {
                 new Rule("print", "COMMAND_PRINT"),
                 new Rule("load", "COMMAND_LOAD"),
                 new Rule("[A-Z0-9_]+", "VALUE_IDENTIFIER"),
-                new Rule("\\`[^`]*\\`", "VALUE_REGEX"),
+                new Rule("\\`([^`\\\\]|(\\\\[`\\\\]))*\\`", "VALUE_REGEX"),
                 new Rule("\\'[^']*\\'", "VALUE_STRING")
         );
-        TokenHolder tokens = lex(s.replaceAll("(\\\\)(.)", "$2"), rules, toSkip);
+        TokenHolder tokens = lex(s, rules, toSkip);
         Iterator<Token> iterator = tokens.iterator();
         while (iterator.hasNext()) {
             Token token = iterator.next();
@@ -79,7 +81,10 @@ public class Lexer {
                     Token ruleToken = iterator.next();
                     assert ruleToken.getName().equals("VALUE_IDENTIFIER");
                     Rule rule = newRules.findFirst(rule1 -> ruleToken.getValue().equals(rule1.getName()));
-                    rule.setPatterns(new Collection<>());
+                    if (rule != null)
+                        rule.setPatterns(new Collection<>());
+                    else
+                        newRules.add(new Rule(new Collection<>(), ruleToken.getValue()));
                 } else if (token.getName().equals("COMMAND_ADD")) {
                     Token ruleToken = iterator.next();
                     Token regexToken = iterator.next();
@@ -91,7 +96,7 @@ public class Lexer {
                     Token ruleToken = iterator.next();
                     assert ruleToken.getName().equals("VALUE_IDENTIFIER");
                     Rule rule = newRules.findFirst(rule1 -> ruleToken.getValue().equals(rule1.getName()));
-                    newRules.remove(rule);
+                    if (rule != null) newRules.remove(rule);
                 } else if (token.getName().equals("COMMAND_PRINT")) {
                     Token ruleToken = iterator.next();
                     assert ruleToken.getName().equals("VALUE_IDENTIFIER");
@@ -115,7 +120,11 @@ public class Lexer {
                         fis.close();
                     } catch (IOException ignored) {}
                     String code = new String(data, StandardCharsets.UTF_8);
-                    newRules = Lexer.parseLexerSettings(code, newRules);
+                    try {
+                        newRules = Lexer.parseLexerSettings(code, newRules);
+                    } catch (LexingException e) {
+                        throw new LexingException(tokens.getTokens(), fileToken.getPosition());
+                    }
                 }
             }
         }
@@ -123,7 +132,7 @@ public class Lexer {
     }
 
     private static Pattern parseRegex(String s) {
-        //s = s.replaceAll("(\\\\)(.)", "$2");
+        s = s.replaceAll("(\\\\)([`\\\\])", "$2");
         return Pattern.compile(s.substring(1, s.length() - 1));
     }
     private static String parseString(String s) {

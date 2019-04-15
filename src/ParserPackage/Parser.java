@@ -12,6 +12,12 @@ import java.util.function.Function;
 import java.util.regex.Pattern;
 
 public class Parser {
+    public static ScriptEngine engine;
+
+    static {
+        engine = new ScriptEngineManager().getEngineByName("js");
+    }
+
     static String getFileExtension(File file) {
         String extension = "";
 
@@ -29,6 +35,30 @@ public class Parser {
 
         return extension;
     }
+
+    public static Collection<Value> compile(String filename) throws Exception {
+        return compileCode(getCodeFromFile(filename));
+    }
+
+    private static String getCodeFromFile(String filename) throws Exception {
+        File file = new File(filename);
+        if (!getFileExtension(file).equalsIgnoreCase("psl")) {
+            if (getFileExtension(file).equals("")) {
+                file = new File(filename + ".psl");
+                if (!getFileExtension(file).equalsIgnoreCase("psl")) throw new Exception("Wrong file: '" + filename + "'");
+            } else throw new Exception("Wrong file extension: " + file.getAbsolutePath());
+        }
+        FileInputStream fis = new FileInputStream(file);
+        byte[] data = new byte[(int) file.length()];
+        fis.read(data);
+        fis.close();
+        return new String(data, StandardCharsets.UTF_8);
+    }
+
+    private static Collection<Value> compileCode(String code) {
+
+    }
+
     public static Value parse(String filename, Environment env) throws Exception {
         File file = new File(filename);
         if (!getFileExtension(file).equalsIgnoreCase("psl")) {
@@ -149,6 +179,19 @@ public class Parser {
             );
             environment[0] = defaultEnvironment;
         } else environment[0] = env;
+        Parser.engine.put("get", (Function<String, Object>) name -> {
+            Variable variable = environment[0].getVariables().findFirst(var -> var.getName().equals(name));
+            if (variable == null) return null;
+            return variable.getValue().getValue();
+        });
+        Parser.engine.put("evalPSL", (Function<String, Value>) code1 -> {
+            try {
+                return Parser.parseCode(code1, environment[0], null);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        });
         Collection<Rule> rules = new Collection<Rule>(){{
             add(new Rule(";", "SEMICOLON"));
             add(new Rule(",", "COMMA"));
@@ -242,8 +285,6 @@ public class Parser {
             output.add(operator.pop());
         }
 
-        System.out.println(output);
-
         Collection<Value> stack = new Collection<>();
         for (Value value : output) {
             if (Function.class.isAssignableFrom(value.getType())) {
@@ -253,7 +294,9 @@ public class Parser {
                     args.add(val);
                 }
                 if (val.getType() == ApproveCall.class) {
-                    stack.add(((Function<PSLFunctionArguments, Value>) value.getValue()).apply(new PSLFunctionArguments(environment[0], args)));
+                    Function<PSLFunctionArguments, Value> function = (Function<PSLFunctionArguments, Value>) value.getValue();
+                    PSLFunctionArguments arguments = new PSLFunctionArguments(environment[0], args);
+                    stack.add(function.apply(arguments));
                 } else stack.add(value);
             } else if (value.getType() == Identifier.class) {
                 Variable variable = environment[0].getVariables().findFirst(var -> var.getName().equals(((Identifier)value.getValue()).getName()));
@@ -310,8 +353,6 @@ public class Parser {
         return new Value(new JSFunction(s));
     }
     private static Value parseJSValue(String s) {
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("js");
         Object result = null;
         try {
             result = engine.eval(s.substring(1, s.length() - 1));
@@ -319,7 +360,7 @@ public class Parser {
             e.printStackTrace();
         }
         try {
-            if (((ScriptObjectMirror) result).isFunction()) {
+            if (Function.class.isAssignableFrom(result.getClass()) || ((ScriptObjectMirror) result).isFunction()) {
                 return parseFunction(s);
             } else return new JSValue(s);
         } catch (ClassCastException ignored) {
@@ -337,32 +378,26 @@ class JSFunction implements Function<Object, Value> {
 
     @Override
     public Value apply(Object values) {
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("js");
         Object[] args = new Object[]{values};
         try {
             args = ((PSLFunctionArguments) values).getArgs().map(value -> value.getType().cast(value.getValue())).reverse().toArray();
-            engine.put("get", (Function<String, Object>) name -> {
-                Variable variable = ((PSLFunctionArguments) values).getEnvironment().getVariables().findFirst(var -> var.getName().equals(name));
-                if (variable == null) return null;
-                return variable.getValue().getValue();
-            });
-            engine.put("evalPSL", (Function<String, Object>) code -> {
-                try {
-                    return Parser.parseCode(code, ((PSLFunctionArguments) values).getEnvironment(), null);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return null;
-                }
-            });
         } catch (ClassCastException ignored){}
-        ScriptObjectMirror result = null;
+        Object result = null;
         try {
-            result = (ScriptObjectMirror) engine.eval(s.substring(1, s.length() - 1));
+            result = Parser.engine.eval(s.substring(1, s.length() - 1));
         } catch (ScriptException e) {
             e.printStackTrace();
         }
-        Object returnValue = result.call(null, args);
+        Object returnValue;
+        try {
+            returnValue = ((ScriptObjectMirror) result).call(null, args);
+        } catch (ClassCastException e) {
+            try {
+                returnValue = ((Function<PSLFunctionArguments, Value>) result).apply((PSLFunctionArguments) values);
+            } catch (ClassCastException e1) {
+                returnValue = ((Function<PSLFunctionArguments, Value>) result).apply(new PSLFunctionArguments(null, new Collection<>(new Value(values))));
+            }
+        }
         return (returnValue == null ? Value.NULL : new Value(returnValue));
     }
 }
@@ -394,12 +429,10 @@ class PSLFunction implements Function<Object, Value> {
 class JSValue extends Value {
     public JSValue(Object object) {
         if (object.getClass() == String.class) {
-            ScriptEngineManager manager = new ScriptEngineManager();
-            ScriptEngine engine = manager.getEngineByName("js");
             Object result = null;
             String s = object.toString();
             try {
-                result = engine.eval(s.substring(1, s.length() - 1));
+                result = Parser.engine.eval(s.substring(1, s.length() - 1));
             } catch (ScriptException e) {
                 e.printStackTrace();
             }
